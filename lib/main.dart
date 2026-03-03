@@ -1,6 +1,27 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:intl/intl.dart';
 
+// ==================== HELPER FUNCTIONS ====================
+String formatAngkaIndonesia(double angka) {
+  return NumberFormat('#,##0.##', 'id_ID').format(angka);
+}
+
+double konversiVolume(double volumeCm3, String targetUnit) {
+  switch (targetUnit) {
+    case 'cm³': return volumeCm3;
+    case 'm³': return volumeCm3 / 1000000;
+    case 'liter': return volumeCm3 / 1000;
+    default: return volumeCm3;
+  }
+}
+
+String getVolumeUnitLabel(String inputUnit) {
+  // Default output mengikuti input unit
+  return '${inputUnit}³';
+}
+
+// ==================== MAIN APP ====================
 void main() {
   runApp(const VolumeApp());
 }
@@ -43,8 +64,6 @@ class HomePage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
-            // Card Kubus
             _buildShapeCard(
               context,
               emoji: '🔲',
@@ -56,10 +75,7 @@ class HomePage extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const KubusPage()),
               ),
             ),
-            
             const SizedBox(height: 12),
-            
-            // Card Tabung
             _buildShapeCard(
               context,
               emoji: '🛢️',
@@ -71,10 +87,7 @@ class HomePage extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const TabungPage()),
               ),
             ),
-            
             const SizedBox(height: 12),
-            
-            // Card Bola
             _buildShapeCard(
               context,
               emoji: '⚽',
@@ -93,7 +106,7 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildShapeCard(BuildContext context, {
-    required String emoji,  // ✅ Ganti dari IconData ke String
+    required String emoji,
     required String title,
     required String subtitle,
     required Color color,
@@ -112,8 +125,7 @@ class HomePage extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // ✅ Pakai Text emoji, bukan Icon
-              Text(emoji, style: TextStyle(fontSize: 48)),
+              Text(emoji, style: const TextStyle(fontSize: 48)),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -143,16 +155,26 @@ class KubusPage extends StatefulWidget {
 
 class _KubusPageState extends State<KubusPage> {
   final _controller = TextEditingController();
+  String _selectedUnit = 'cm';
   String _result = '';
 
   void _calculate() {
-    final sisi = double.tryParse(_controller.text);
-    if (sisi == null || sisi <= 0) {
+    final input = double.tryParse(_controller.text.replaceAll(',', '.'));
+    if (input == null || input <= 0) {
       setState(() => _result = '❌ Masukkan angka yang valid!');
       return;
     }
-    final volume = pow(sisi, 3);
-    setState(() => _result = '✅ Volume Kubus: ${volume.toStringAsFixed(2)} cm³');
+
+    // Konversi ke cm untuk perhitungan internal
+    final sisiCm = _selectedUnit == 'm' ? input * 100 : input;
+    final volumeCm3 = pow(sisiCm, 3);
+
+    // Konversi ke unit output
+    final outputUnit = '${_selectedUnit}³';
+    final volumeFinal = konversiVolume(volumeCm3, outputUnit);
+    final formatted = formatAngkaIndonesia(volumeFinal);
+
+    setState(() => _result = '✅ Volume Kubus: $formatted $outputUnit');
   }
 
   @override
@@ -169,17 +191,32 @@ class _KubusPageState extends State<KubusPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // ✅ Emoji besar sebagai visual
             const Text('🔲', style: TextStyle(fontSize: 80)),
             const SizedBox(height: 24),
             TextField(
               controller: _controller,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Panjang Sisi (cm)',
+                labelText: 'Panjang Sisi',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.straighten),
+                helperText: 'Gunakan titik atau koma untuk desimal',
               ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Satuan: '),
+                DropdownButton<String>(
+                  value: _selectedUnit,
+                  items: const [
+                    DropdownMenuItem(value: 'cm', child: Text('Centimeter (cm)')),
+                    DropdownMenuItem(value: 'm', child: Text('Meter (m)')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedUnit = val!),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -219,17 +256,28 @@ class TabungPage extends StatefulWidget {
 class _TabungPageState extends State<TabungPage> {
   final _radiusController = TextEditingController();
   final _heightController = TextEditingController();
+  String _selectedUnit = 'cm';
   String _result = '';
 
   void _calculate() {
-    final r = double.tryParse(_radiusController.text);
-    final h = double.tryParse(_heightController.text);
-    if (r == null || h == null || r <= 0 || h <= 0) {
+    final rInput = double.tryParse(_radiusController.text.replaceAll(',', '.'));
+    final hInput = double.tryParse(_heightController.text.replaceAll(',', '.'));
+    
+    if (rInput == null || hInput == null || rInput <= 0 || hInput <= 0) {
       setState(() => _result = '❌ Masukkan angka yang valid!');
       return;
     }
-    final volume = pi * pow(r, 2) * h;
-    setState(() => _result = '✅ Volume Tabung: ${volume.toStringAsFixed(2)} cm³');
+
+    // Konversi ke cm
+    final rCm = _selectedUnit == 'm' ? rInput * 100 : rInput;
+    final hCm = _selectedUnit == 'm' ? hInput * 100 : hInput;
+    
+    final volumeCm3 = pi * pow(rCm, 2) * hCm;
+    final outputUnit = '${_selectedUnit}³';
+    final volumeFinal = konversiVolume(volumeCm3, outputUnit);
+    final formatted = formatAngkaIndonesia(volumeFinal);
+
+    setState(() => _result = '✅ Volume Tabung: $formatted $outputUnit');
   }
 
   @override
@@ -253,20 +301,35 @@ class _TabungPageState extends State<TabungPage> {
               controller: _radiusController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Radius (cm)',
+                labelText: 'Radius',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.circle),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             TextField(
               controller: _heightController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Tinggi (cm)',
+                labelText: 'Tinggi',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.height),
               ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Satuan: '),
+                DropdownButton<String>(
+                  value: _selectedUnit,
+                  items: const [
+                    DropdownMenuItem(value: 'cm', child: Text('Centimeter (cm)')),
+                    DropdownMenuItem(value: 'm', child: Text('Meter (m)')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedUnit = val!),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -305,16 +368,25 @@ class BolaPage extends StatefulWidget {
 
 class _BolaPageState extends State<BolaPage> {
   final _controller = TextEditingController();
+  String _selectedUnit = 'cm';
   String _result = '';
 
   void _calculate() {
-    final r = double.tryParse(_controller.text);
-    if (r == null || r <= 0) {
+    final rInput = double.tryParse(_controller.text.replaceAll(',', '.'));
+    if (rInput == null || rInput <= 0) {
       setState(() => _result = '❌ Masukkan angka yang valid!');
       return;
     }
-    final volume = (4 / 3) * pi * pow(r, 3);
-    setState(() => _result = '✅ Volume Bola: ${volume.toStringAsFixed(2)} cm³');
+
+    // Konversi ke cm
+    final rCm = _selectedUnit == 'm' ? rInput * 100 : rInput;
+    final volumeCm3 = (4 / 3) * pi * pow(rCm, 3);
+    
+    final outputUnit = '${_selectedUnit}³';
+    final volumeFinal = konversiVolume(volumeCm3, outputUnit);
+    final formatted = formatAngkaIndonesia(volumeFinal);
+
+    setState(() => _result = '✅ Volume Bola: $formatted $outputUnit');
   }
 
   @override
@@ -337,10 +409,25 @@ class _BolaPageState extends State<BolaPage> {
               controller: _controller,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Radius (cm)',
+                labelText: 'Radius',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.circle),
               ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Satuan: '),
+                DropdownButton<String>(
+                  value: _selectedUnit,
+                  items: const [
+                    DropdownMenuItem(value: 'cm', child: Text('Centimeter (cm)')),
+                    DropdownMenuItem(value: 'm', child: Text('Meter (m)')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedUnit = val!),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
