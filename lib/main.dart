@@ -16,11 +16,6 @@ double konversiVolume(double volumeCm3, String targetUnit) {
   }
 }
 
-String getVolumeUnitLabel(String inputUnit) {
-  // Default output mengikuti input unit
-  return '${inputUnit}³';
-}
-
 // ==================== MAIN APP ====================
 void main() {
   runApp(const VolumeApp());
@@ -165,11 +160,9 @@ class _KubusPageState extends State<KubusPage> {
       return;
     }
 
-    // Konversi ke cm untuk perhitungan internal
     final sisiCm = _selectedUnit == 'm' ? input * 100 : input;
-    final volumeCm3 = pow(sisiCm, 3);
+    final volumeCm3 = pow(sisiCm, 3).toDouble();
 
-    // Konversi ke unit output
     final outputUnit = '${_selectedUnit}³';
     final volumeFinal = konversiVolume(volumeCm3, outputUnit);
     final formatted = formatAngkaIndonesia(volumeFinal);
@@ -268,11 +261,10 @@ class _TabungPageState extends State<TabungPage> {
       return;
     }
 
-    // Konversi ke cm
     final rCm = _selectedUnit == 'm' ? rInput * 100 : rInput;
     final hCm = _selectedUnit == 'm' ? hInput * 100 : hInput;
     
-    final volumeCm3 = pi * pow(rCm, 2) * hCm;
+    final volumeCm3 = (pi * pow(rCm, 2) * hCm).toDouble();
     final outputUnit = '${_selectedUnit}³';
     final volumeFinal = konversiVolume(volumeCm3, outputUnit);
     final formatted = formatAngkaIndonesia(volumeFinal);
@@ -378,9 +370,8 @@ class _BolaPageState extends State<BolaPage> {
       return;
     }
 
-    // Konversi ke cm
     final rCm = _selectedUnit == 'm' ? rInput * 100 : rInput;
-    final volumeCm3 = (4 / 3) * pi * pow(rCm, 3);
+    final volumeCm3 = ((4 / 3) * pi * pow(rCm, 3)).toDouble();
     
     final outputUnit = '${_selectedUnit}³';
     final volumeFinal = konversiVolume(volumeCm3, outputUnit);
