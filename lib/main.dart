@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math'; // ✅ 1. Import ini wajib ada untuk fungsi pow()
 
 void main() {
   runApp(const VolumeApp());
@@ -44,21 +45,38 @@ class HomePage extends StatelessWidget {
             
             // Card Kubus
             _buildShapeCard(
-              emoji: '🔲', title: 'Kubus', subtitle: 'V = s³', color: Colors.blue,
-              onTap: () => print('Kubus ditekan'),
-            ),
-            const SizedBox(height: 12),
+              context, // ✅ 2. Tambahkan parameter context di sini
+              emoji: '🔲', 
+              title: 'Kubus', 
+              subtitle: 'V = s³', 
+              color: Colors.blue,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KubusPage()),
+              ), // ✅ Kurung tutup untuk Navigator
+            ), // ✅ Kurung tutup untuk _buildShapeCard
             
+            const SizedBox(height: 12),
+      
             // Card Tabung
             _buildShapeCard(
-              emoji: '🛢️', title: 'Tabung', subtitle: 'V = π × r² × h', color: Colors.green,
+              context,
+              emoji: '🛢️', 
+              title: 'Tabung', 
+              subtitle: 'V = π × r² × h', 
+              color: Colors.green,
               onTap: () => print('Tabung ditekan'),
             ),
+            
             const SizedBox(height: 12),
             
             // Card Bola
             _buildShapeCard(
-              emoji: '⚽', title: 'Bola', subtitle: 'V = 4/3 × π × r³', color: Colors.orange,
+              context,
+              emoji: '⚽', 
+              title: 'Bola', 
+              subtitle: 'V = 4/3 × π × r³', 
+              color: Colors.orange,
               onTap: () => print('Bola ditekan'),
             ),
           ],
@@ -67,7 +85,8 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildShapeCard({
+  // ✅ 3. Tambahkan parameter 'context' di fungsi helper ini
+  Widget _buildShapeCard(BuildContext context, {
     required String emoji,
     required String title,
     required String subtitle,
@@ -107,7 +126,6 @@ class HomePage extends StatelessWidget {
   }
 }
 
-
 // ==================== KUBUS PAGE ====================
 class KubusPage extends StatefulWidget {
   const KubusPage({super.key});
@@ -126,7 +144,7 @@ class _KubusPageState extends State<KubusPage> {
       setState(() => _result = '❌ Masukkan angka yang valid!');
       return;
     }
-    final volume = pow(sisi, 3);
+    final volume = pow(sisi, 3); 
     setState(() => _result = '✅ Volume Kubus: ${volume.toStringAsFixed(2)} cm³');
   }
 
@@ -144,7 +162,6 @@ class _KubusPageState extends State<KubusPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // ✅ Emoji besar sebagai visual
             const Text('🔲', style: TextStyle(fontSize: 80)),
             const SizedBox(height: 24),
             TextField(
@@ -161,9 +178,7 @@ class _KubusPageState extends State<KubusPage> {
               onPressed: _calculate,
               icon: const Icon(Icons.calculate),
               label: const Text('Hitung Volume'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-              ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
             ),
             const SizedBox(height: 24),
             if (_result.isNotEmpty)
