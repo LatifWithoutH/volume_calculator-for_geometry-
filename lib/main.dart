@@ -20,7 +20,6 @@ class VolumeApp extends StatelessWidget {
   }
 }
 
-
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -102,6 +101,82 @@ class HomePage extends StatelessWidget {
               Icon(Icons.arrow_forward_ios, color: color),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ==================== KUBUS PAGE ====================
+class KubusPage extends StatefulWidget {
+  const KubusPage({super.key});
+
+  @override
+  State<KubusPage> createState() => _KubusPageState();
+}
+
+class _KubusPageState extends State<KubusPage> {
+  final _controller = TextEditingController();
+  String _result = '';
+
+  void _calculate() {
+    final sisi = double.tryParse(_controller.text);
+    if (sisi == null || sisi <= 0) {
+      setState(() => _result = '❌ Masukkan angka yang valid!');
+      return;
+    }
+    final volume = pow(sisi, 3);
+    setState(() => _result = '✅ Volume Kubus: ${volume.toStringAsFixed(2)} cm³');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('🔲 Volume Kubus')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // ✅ Emoji besar sebagai visual
+            const Text('🔲', style: TextStyle(fontSize: 80)),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Panjang Sisi (cm)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.straighten),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _calculate,
+              icon: const Icon(Icons.calculate),
+              label: const Text('Hitung Volume'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (_result.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: Text(_result, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+          ],
         ),
       ),
     );
