@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../helpers/format_helper.dart';
+import '../services/prefs_service.dart';
 
 class KubusPage extends StatefulWidget {
   const KubusPage({super.key});
@@ -11,8 +12,38 @@ class KubusPage extends StatefulWidget {
 
 class _KubusPageState extends State<KubusPage> {
   final _controller = TextEditingController();
-  String _selectedUnit = 'cm';
+  
+  String _inputUnit = 'cm';
+  String _outputUnit = 'cm³';
   String _result = '';
+  bool _isLoading = true;
+
+  final List<String> _outputOptions = ['mm³', 'cm³', 'm³', 'liter', 'ml'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final input = await PrefsService.getInputUnit();
+    final output = await PrefsService.getOutputUnit();
+    setState(() {
+      _inputUnit = input;
+      _outputUnit = output;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _changeOutputUnit(String? newUnit) async {
+    if (newUnit != null) {
+      await PrefsService.setOutputUnit(newUnit);
+      setState(() => _outputUnit = newUnit);
+      // Jika ada hasil sebelumnya, hitung ulang dengan unit baru
+      if (_controller.text.isNotEmpty) _calculate();
+    }
+  }
 
   void _calculate() {
     if (_controller.text.isEmpty) {
@@ -26,22 +57,20 @@ class _KubusPageState extends State<KubusPage> {
       return;
     }
 
-    final sisiCm = _selectedUnit == 'm' ? input * 100 : input;
+    // 1. Konversi input ke cm
+    final sisiCm = keCm3(input, _inputUnit);
+    // 2. Hitung volume dalam cm³
     final volumeCm3 = pow(sisiCm, 3).toDouble();
+    // 3. Konversi ke unit output
+    final formatted = dariCm3(volumeCm3, _outputUnit);
+    final label = getLabelUnit(_outputUnit);
 
-    final outputUnit = '${_selectedUnit}³';
-    final volumeFinal = konversiVolume(volumeCm3, outputUnit);
-    final formatted = formatAngkaIndonesia(volumeFinal);
-
-    setState(() => _result = '✅ Volume Kubus: $formatted $outputUnit');
+    setState(() => _result = '✅ Volume Kubus: $formatted $label');
   }
 
   void _reset() {
     _controller.clear();
-    setState(() {
-      _result = '';
-      _selectedUnit = 'cm';
-    });
+    setState(() => _result = '');
   }
 
   @override
@@ -52,6 +81,10 @@ class _KubusPageState extends State<KubusPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('🔲 Volume Kubus')),
       body: SingleChildScrollView(
@@ -60,36 +93,40 @@ class _KubusPageState extends State<KubusPage> {
           children: [
             const Text('🔲', style: TextStyle(fontSize: 80)),
             const SizedBox(height: 24),
+            
             TextField(
               controller: _controller,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Panjang Sisi',
+                labelText: 'Panjang Sisi ($_inputUnit)',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.straighten),
-                helperText: 'Gunakan titik atau koma untuk desimal',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: _reset,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Satuan: '),
-                DropdownButton<String>(
-                  value: _selectedUnit,
-                  items: const [
-                    DropdownMenuItem(value: 'cm', child: Text('Centimeter (cm)')),
-                    DropdownMenuItem(value: 'm', child: Text('Meter (m)')),
-                  ],
-                  onChanged: (val) => setState(() => _selectedUnit = val!),
+            const SizedBox(height: 16),
+            
+            // DROPDOWN OUTPUT UNIT
+            Card(
+              child: DropdownButtonFormField<String>(
+                value: _outputUnit,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: InputBorder.none,
+                  labelText: 'Hasil dalam:',
+                  prefixIcon: Icon(Icons.output),
                 ),
-              ],
+                items: _outputOptions.map((unit) {
+                  return DropdownMenuItem(value: unit, child: Text(getLabelUnit(unit)));
+                }).toList(),
+                onChanged: _changeOutputUnit,
+              ),
             ),
             const SizedBox(height: 16),
+            
             ElevatedButton.icon(
               onPressed: _calculate,
               icon: const Icon(Icons.calculate),
@@ -99,6 +136,7 @@ class _KubusPageState extends State<KubusPage> {
               ),
             ),
             const SizedBox(height: 24),
+            
             if (_result.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(16),

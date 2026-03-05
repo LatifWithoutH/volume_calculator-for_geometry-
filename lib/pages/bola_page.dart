@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../helpers/format_helper.dart';
+import '../services/prefs_service.dart';
 
 class BolaPage extends StatefulWidget {
   const BolaPage({super.key});
@@ -11,8 +12,37 @@ class BolaPage extends StatefulWidget {
 
 class _BolaPageState extends State<BolaPage> {
   final _controller = TextEditingController();
-  String _selectedUnit = 'cm';
+  
+  String _inputUnit = 'cm';
+  String _outputUnit = 'cm³';
   String _result = '';
+  bool _isLoading = true;
+
+  final List<String> _outputOptions = ['mm³', 'cm³', 'm³', 'liter', 'ml'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final input = await PrefsService.getInputUnit();
+    final output = await PrefsService.getOutputUnit();
+    setState(() {
+      _inputUnit = input;
+      _outputUnit = output;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _changeOutputUnit(String? newUnit) async {
+    if (newUnit != null) {
+      await PrefsService.setOutputUnit(newUnit);
+      setState(() => _outputUnit = newUnit);
+      if (_controller.text.isNotEmpty) _calculate();
+    }
+  }
 
   void _calculate() {
     if (_controller.text.isEmpty) {
@@ -26,22 +56,22 @@ class _BolaPageState extends State<BolaPage> {
       return;
     }
 
-    final rCm = _selectedUnit == 'm' ? rInput * 100 : rInput;
+    // 1. Konversi input ke cm (standar internal)
+    final rCm = keCm3(rInput, _inputUnit);
+    
+    // 2. Hitung Volume dalam cm³ (Rumus: 4/3 × π × r³)
     final volumeCm3 = ((4 / 3) * pi * pow(rCm, 3)).toDouble();
     
-    final outputUnit = '${_selectedUnit}³';
-    final volumeFinal = konversiVolume(volumeCm3, outputUnit);
-    final formatted = formatAngkaIndonesia(volumeFinal);
+    // 3. Konversi dari cm³ ke unit output pilihan user
+    final formatted = dariCm3(volumeCm3, _outputUnit);
+    final label = getLabelUnit(_outputUnit);
 
-    setState(() => _result = '✅ Volume Bola: $formatted $outputUnit');
+    setState(() => _result = '✅ Volume Bola: $formatted $label');
   }
 
   void _reset() {
     _controller.clear();
-    setState(() {
-      _result = '';
-      _selectedUnit = 'cm';
-    });
+    setState(() => _result = '');
   }
 
   @override
@@ -52,6 +82,10 @@ class _BolaPageState extends State<BolaPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('⚽ Volume Bola')),
       body: SingleChildScrollView(
@@ -60,11 +94,12 @@ class _BolaPageState extends State<BolaPage> {
           children: [
             const Text('⚽', style: TextStyle(fontSize: 80)),
             const SizedBox(height: 24),
+            
             TextField(
               controller: _controller,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Radius',
+                labelText: 'Radius ($_inputUnit)',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.circle),
                 suffixIcon: IconButton(
@@ -73,22 +108,26 @@ class _BolaPageState extends State<BolaPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Satuan: '),
-                DropdownButton<String>(
-                  value: _selectedUnit,
-                  items: const [
-                    DropdownMenuItem(value: 'cm', child: Text('Centimeter (cm)')),
-                    DropdownMenuItem(value: 'm', child: Text('Meter (m)')),
-                  ],
-                  onChanged: (val) => setState(() => _selectedUnit = val!),
+            const SizedBox(height: 16),
+            
+            // DROPDOWN OUTPUT UNIT
+            Card(
+              child: DropdownButtonFormField<String>(
+                value: _outputUnit,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: InputBorder.none,
+                  labelText: 'Hasil dalam:',
+                  prefixIcon: Icon(Icons.output),
                 ),
-              ],
+                items: _outputOptions.map((unit) {
+                  return DropdownMenuItem(value: unit, child: Text(getLabelUnit(unit)));
+                }).toList(),
+                onChanged: _changeOutputUnit,
+              ),
             ),
             const SizedBox(height: 16),
+            
             ElevatedButton.icon(
               onPressed: _calculate,
               icon: const Icon(Icons.calculate),
@@ -98,6 +137,7 @@ class _BolaPageState extends State<BolaPage> {
               ),
             ),
             const SizedBox(height: 24),
+            
             if (_result.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(16),

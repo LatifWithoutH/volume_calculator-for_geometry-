@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'pages/kubus_page.dart';
 import 'pages/tabung_page.dart';
 import 'pages/bola_page.dart';
+import 'pages/settings_page.dart'; // Import settings
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -12,6 +13,18 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('📐 Kalkulator Volume'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          // Tombol Settings
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
